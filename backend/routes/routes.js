@@ -24,14 +24,15 @@ function checkIfExists(invoicenumber, invoice) {
         vendor.find({
             invoice_number :  invoicenumber
         }, (err, doc) => {
-            if(doc.length == 0){
-                vendor.create(invoice)
-                console.log("New invoice");
-                
-            }
-            else {
-                console.log("Already exists");
-            }
+            // if(doc.length == 0){
+            //     vendor.create(invoice)
+            //     console.log("New invoice");   
+            // }
+            // else {
+            //     console.log("Already exists");
+            // }
+            vendor.create(invoice)
+            console.log("New invoice");   
         })
     } catch(err) {
         console.log(err);
@@ -52,13 +53,9 @@ router.post("/upload", async (request, response) => {
         else {
             let vendorfile = request.files.uploadedfile
 
-            vendorfile.mv("./uploaded/" + vendorfile.name)
-
             // Read the excel file
             readXlsxFile(vendorfile.data).then((rows) => {
-
                 for (var i = 1; i <= rows.length; i++) {
-                    console.log("Data at " + i + " index is " + rows[i][0]);
                     let record = {
                         invoice_number: rows[i][0],
                         document_number: rows[i][1],
@@ -74,22 +71,11 @@ router.post("/upload", async (request, response) => {
                     checkIfExists(record.invoice_number, record)
                     // Check whether the record is present or not
                     console.log(db.collection('invoices').length);
-                    
-                    //vendor.create(record)
                 }
 
             }).catch((onrejectionhandled) => {
                 console.log(onrejectionhandled);
             })
-            // Checking whether the uploaded files is of excel
-            // if(vendorfile.mimetype != FILE_TYPE_PREFFERED){
-            //     response.send({
-            //         status: false,
-            //         message: "Upload Excel file only",
-            //         err : "NOT_PREFERRED_FILE_TYPE"
-            //     })
-            // }
-            // else {
 
             var data = vendorfile.data.toString("utf-8")
             response.send({
@@ -112,19 +98,19 @@ router.get("/detail", async (req, res) => {
     var result
     var amount = 0
     var unique_vendors
+    var invalid_invoices = 0
     try {
         result = await vendor.find()
         for(var i = 0 ; i < result.length; i++){
-            console.log(result[i].amt_in_loc_cur);
             // Dont add negative values
-            if(result[i].amt_in_loc_cur > 0)
-                amount += result[i].amt_in_loc_cur
+            amount += result[i].amt_in_loc_cur
         }
 
         unique_vendors = await vendor.find().distinct('vendor_name', (err, ids) => {
             console.log(ids);
             unique_vendors = ids
         })
+
         console.log("Total records are : " + result.length);
     }
     catch(e){
@@ -136,7 +122,8 @@ router.get("/detail", async (req, res) => {
         status : "OK",
         invoices_uploaded : result.length,
         amount_total : amount,
-        vendor_unique : unique_vendors
+        vendor_unique : unique_vendors,
+        invalid_invoice :  invalid_invoices
     })
 })
 
