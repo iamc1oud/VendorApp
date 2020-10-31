@@ -3,7 +3,8 @@ const mongoose = require('mongoose')
 const vendorschema = mongoose.Schema({
     invoice_number :{
         prop : 'invoice_numbers',
-        type: Date
+        type: Number,
+        unique: true
     },
     document_number : {
         prop: 'documentNumber',
@@ -45,8 +46,9 @@ const vendorschema = mongoose.Schema({
 })
 
 vendorschema.pre('save', () => {
-    console.log("Function run before saving to database");
+    //console.log("Function run before saving to database");
 })
+
 
 // {
 //     InvoiceNumbers: Number,

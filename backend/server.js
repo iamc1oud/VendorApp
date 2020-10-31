@@ -45,7 +45,25 @@ var invoice_object = {
     'Vendor Type': String
 }
 
-// Pre save method before saving to database
+// Checking if data already exists
+function checkIfExists(invoicenumber, invoice) {
+    try {
+        vendor.find({
+            invoice_number :  invoicenumber
+        }, (err, doc) => {
+            if(doc.length == 0){
+                vendor.create(invoice)
+                console.log("New invoice");
+                
+            }
+            else {
+                console.log("Already exists");
+            }
+        })
+    } catch(err) {
+        console.log(err);
+    } 
+}
 
 
 
@@ -82,11 +100,11 @@ app.post("/api/v1/upload", async (request, response) => {
                         vendor_name: rows[i][8],
                         vendor_type: rows[i][9]
                     }
-
+                    checkIfExists(record.invoice_number, record)
                     // Check whether the record is present or not
-
                     console.log(db.collection('invoices').length);
-                    vendor.create(record)
+                    
+                    //vendor.create(record)
                 }
 
             }).catch((onrejectionhandled) => {
@@ -118,6 +136,16 @@ app.post("/api/v1/upload", async (request, response) => {
         console.log(err);
     }
 })
+
+app.get("/api/v1/detail", (req, res) => {
+    
+    
+    res.send({
+        status : "OK",
+        invoices_uploaded : invoice_uploaded 
+    })
+})
+
 
 app.listen(
     9000,
