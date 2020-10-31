@@ -7,11 +7,14 @@ const bodyParser = require("body-parser")
 const _ = require("lodash")
 const { response } = require("express")
 const path = require('path')
+const vendor = require('./model/VendorSchema')
+const readXlsxFile = require('read-excel-file')
+const mongoose = require("mongoose")
 
 // Mongoose modules
-const mongoose = require("mongoose")
-mongoose.connect('mongodb://localhost:27017/', {
-    useNewUrlParser :true
+mongoose.connect('mongodb://localhost:27017/Vendor', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
 })
 
 const db = mongoose.connection
@@ -19,9 +22,6 @@ const db = mongoose.connection
 db.once('open', () => {
     console.log("Connected to mongo db");
 })
-
-// Dependency required for reading excel file
-const readXlsxFile = require('read-excel-file')
 
 // Middlewares
 app.use(express.json())
@@ -32,50 +32,21 @@ app.use(fileUpload({
 }))
 app.use(cors())
 
-// Schema 
-const fileSchema = {
-    'Invoice Numbers':{
-        prop : 'invoice_numbers',
-        type: Date
-    },
-    'Document Number' : {
-        prop: 'documentNumber',
-        type: Number
-    },
-    'Type': {
-        prop: 'type',
-        type: String
-    },
-    'Net Due dt' : {
-        prop : 'net_due_date',
-        type: Number
-    },
-    'Doc. Date' : {
-        prop : 'doc_date',
-        type: Date
-    },
-    
-    'Pstng Date' : {
-        prop: 'posting_date',
-        type: Date
-    },
-    'Amt in loc.cur.': {
-        prop: 'amount_in_local_currency',
-        type: Number
-    },
-    'Vendor Code': {
-        prop:   'vendor_code',
-        type: String
-    },
-    'Vendor Name': {
-        prop:   'vendor_name',
-        type: String
-    },
-    'Vendor Type': {
-        prop:   'vendor_type',
-        type: String
-    }
+var invoice_object = {
+    'Invoice Numbers': Number,
+    'Document Number': Number,
+    'Type': String,
+    'Net Due dt': Date,
+    'Doc. Date': Date,
+    'Pstng Date': Date,
+    'Amt in loc.cur.': Number,
+    'Vendor Code': String,
+    'Vendor Name': String,
+    'Vendor Type': String
 }
+
+// Pre save method before saving to database
+
 
 
 // Post request to upload file
@@ -95,8 +66,29 @@ app.post("/api/v1/upload", async (request, response) => {
             vendorfile.mv("./uploaded/" + vendorfile.name)
 
             // Read the excel file
-            readXlsxFile(vendorfile.data, {fileSchema}).then(({rows, errors}) => {
-                
+            readXlsxFile(vendorfile.data).then((rows) => {
+
+                for (var i = 1; i <= rows.length; i++) {
+                    console.log("Data at " + i + " index is " + rows[i][0]);
+                    let record = {
+                        invoice_number: rows[i][0],
+                        document_number: rows[i][1],
+                        type: rows[i][2],
+                        net_due_dt: rows[i][3],
+                        doc_Date: rows[i][4],
+                        posting_date: rows[i][5],
+                        amt_in_loc_cur: rows[i][6],
+                        vendor_code: rows[i][7],
+                        vendor_name: rows[i][8],
+                        vendor_type: rows[i][9]
+                    }
+
+                    // Check whether the record is present or not
+
+                    console.log(db.collection('invoices').length);
+                    vendor.create(record)
+                }
+
             }).catch((onrejectionhandled) => {
                 console.log(onrejectionhandled);
             })
